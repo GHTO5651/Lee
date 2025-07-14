@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>게시판</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<div class="container mt-4">
+  <h1>게시판</h1>
+  <a href="/write.html" class="btn btn-primary mb-3">글쓰기</a>
+
+  <div id="postList" class="list-group mb-4"></div>
+</div>
+
+<script>
+  const postList = document.getElementById('postList');
+
+  async function loadPosts() {
+    const res = await fetch('/api/posts');
+    const posts = await res.json();
+    postList.innerHTML = '';
+
+    posts.forEach(post => {
+      const div = document.createElement('div');
+      div.className = 'd-flex justify-content-between align-items-center mb-1';
+
+      const btn = document.createElement('a');
+      btn.className = 'list-group-item list-group-item-action flex-grow-1 me-2';
+      btn.textContent = post.title;
+      btn.href = `/detail.html?id=${post.id}`;
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-sm btn-danger';
+      delBtn.textContent = '삭제';
+      delBtn.onclick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (confirm('정말 삭제할까요?')) {
+          const res = await fetch('/api/posts/' + post.id, { method: 'DELETE' });
+          if (res.ok) {
+            alert('삭제 성공');
+            loadPosts();
+          } else {
+            alert('삭제 실패');
+          }
+        }
+      };
+
+      div.appendChild(btn);
+      div.appendChild(delBtn);
+      postList.appendChild(div);
+    });
+  }
+
+  loadPosts();
+</script>
+</body>
+</html>
