@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>게시글 보기</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="/">게시판</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h3 id="title" class="mb-3"></h3>
+      <p id="content" style="white-space: pre-wrap;"></p>
+      <button id="editBtn" class="btn btn-warning btn-sm">✏ 수정</button>
+    </div>
+  </div>
+
+  <!-- ✏ 수정 폼 -->
+  <div id="editForm" class="card shadow-sm mb-4" style="display:none;">
+    <div class="card-body">
+      <h4 class="mb-3">글 수정</h4>
+      <form id="updateForm">
+        <input type="text" name="title" id="editTitle" class="form-control mb-2" required>
+        <textarea name="content" id="editContent" class="form-control mb-2" rows="5" required></textarea>
+        <select name="size" id="editSize" class="form-select mb-2">
+          <option value="16px">보통</option>
+          <option value="20px">크게</option>
+          <option value="24px">더 크게</option>
+        </select>
+        <input type="color" name="color" id="editColor" class="form-control form-control-color mb-2" value="#000000">
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-success">💾 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ✅ URL에서 id 파라미터 가져오기
+  const id = new URLSearchParams(location.search).get('id');
+
+  const titleEl = document.getElementById('title');
+  const contentEl = document.getElementById('content');
+  const editBtn = document.getElementById('editBtn');
+  const editForm = document.getElementById('editForm');
+  const updateForm = document.getElementById('updateForm');
+
+  let currentPost = null;
+
+  // ✅ 글 데이터 불러오기
+  fetch('/post-data/' + id)
+    .then(res => {
+      if (!res.ok) throw new Error('글을 불러올 수 없습니다.');
+      return res.json();
+    })
+    .then(post => {
+      currentPost = post;
+      renderPost(post);
+      fillEditForm(post);
+    })
+    .catch(err => {
+      document.body.innerHTML = `<div class="container mt-5"><div class="alert alert-danger">${err.message}</div></div>`;
+    });
+
+  function renderPost(post) {
+    titleEl.textContent = post.title;
+    contentEl.textContent = post.content;
