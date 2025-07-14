@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>게시판</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container mt-4">
+    <h1>게시판</h1>
+    <button id="writeBtn" class="btn btn-primary mb-3">글쓰기</button>
+
+    <div id="postList" class="list-group mb-4"></div>
+
+    <div id="postDetail" style="border:1px solid #ccc; padding:15px; display:none;"></div>
+
+    <div id="writeForm" style="display:none;">
+      <h3>글쓰기</h3>
+      <form id="form">
+        <input name="title" placeholder="제목" class="form-control mb-2" required />
+        <textarea name="content" placeholder="내용" class="form-control mb-2" rows="5" required></textarea>
+        <select name="size" class="form-select mb-2">
+          <option value="16px">보통</option>
+          <option value="20px">크게</option>
+          <option value="24px">더 크게</option>
+        </select>
+        <input type="color" name="color" value="#000000" class="form-control form-control-color mb-2" />
+        <button type="submit" class="btn btn-success">저장</button>
+        <button type="button" id="cancelBtn" class="btn btn-secondary">취소</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const postList = document.getElementById('postList');
+    const postDetail = document.getElementById('postDetail');
+    const writeForm = document.getElementById('writeForm');
+    const writeBtn = document.getElementById('writeBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const form = document.getElementById('form');
+
+    // 글 목록 가져오기
+    async function loadPosts() {
+      const res = await fetch('/api/posts');
+      const posts = await res.json();
+      postList.innerHTML = '';
+
+      posts.forEach(post => {
+        const div = document.createElement('div');
+        div.className = 'd-flex justify-content-between align-items-center mb-1';
+
+        const btn = document.createElement('button');
+        btn.className = 'list-group-item list-group-item-action flex-grow-1 me-2';
+        btn.textContent = post.title;
+        btn.onclick = () => showPost(post._id);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn btn-sm btn-danger';
+        delBtn.textContent = '삭제';
+        delBtn.onclick = async (e) => {
+          e.stopPropagation(); // 클릭 이벤트가 글 보기 버튼으로 전달되는 걸 막음
+          if (confirm('정말 삭제할까요?')) {
+            const res = await fetch('/api/posts/' + post._id, { method: 'DELETE' });
+            if (res.ok) {
+              alert('삭제 성공');
+              postDetail.style.display = 'none';
+              loadPosts();
+            } else {
+              alert('삭제 실패');
+            }
+          }
+        };
+
+        div.appendChild(btn);
+        div.appendChild(delBtn);
+        postList.appendChild(div);
+      });
+    }
+
+    // 글 상세 보여주기
+    async function showPost(id) {
+      const res = await fetch('/api/posts/' + id);
+      const post = await res.json();
+      postDetail.style.display = 'block';
+      writeForm.style.display = 'none';
+      postDetail.innerHTML = `
+        <h3 style="font-size:${post.size}; color:${post.color}">${post.title}</h3>
+        <p style="font-size:${post.size}; color:${post.color}; white-space: pre-wrap;">${post.content}</p>
+      `;
+    }
+
+    // 글쓰기 폼 보여주기
+    writeBtn.onclick = () => {
+      writeForm.style.display = 'block';
+      postDetail.style.display = 'none';
+    };
+
+    // 글쓰기 취소
+    cancelBtn.onclick = () => {
+      writeForm.style.display = 'none';
+      postDetail.style.display = 'none';
+    };
+
+    // 폼 제출 처리
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        alert('저장 성공!');
+        form.reset();
+        writeForm.style.display = 'none';
+        loadPosts();
+      } else {
+        alert('저장 실패');
+      }
+    };
+
+    // 초기 글 목록 로드
+    loadPosts();
+  </script>
+</body>
+</html>
